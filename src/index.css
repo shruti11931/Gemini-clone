@@ -1,0 +1,174 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: Outfit;
+}
+/* In your App.css or index.css */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+}
+[data-font="small"]  { font-size: 13px; }
+[data-font="medium"] { font-size: 16px; }
+[data-font="large"]  { font-size: 19px; }
+
+#root {
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.app-layout {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+@media (max-width: 1250px) {
+  .app-layout {
+    padding: 0 16px;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 980px) {
+  #root {
+    overflow: auto;
+  }
+
+  .app-layout {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: 0;
+    border-right: none;
+    border-bottom: 1px solid #e0e4ea;
+  }
+
+  .sidebar.collapsed {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .main {
+    height: auto;
+    min-height: calc(100vh - 72px);
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .main-container {
+    padding: 24px;
+  }
+}
+/* ===== DARK MODE ===== */
+body.dark {
+  background-color: #131314;
+  color: #e3e3e3;
+}
+
+/* Sidebar */
+body.dark .sidebar {
+  background-color: #1e1f20;
+}
+
+body.dark .new-chat {
+  background-color: #2a2b2c;
+  color: #e3e3e3;
+}
+
+body.dark .recent-entry:hover {
+  background-color: #2a2b2c;
+}
+
+body.dark .recent-entry p,
+body.dark .recent-title {
+  color: #c4c7c5;
+}
+
+body.dark .bottom-item p {
+  color: #c4c7c5;
+}
+
+/* Main area */
+body.dark .main {
+  background-color: #131314;
+}
+
+body.dark .nav p {
+  color: #e3e3e3;
+}
+
+body.dark .greet span {
+  -webkit-text-fill-color: unset;
+  color: #4a9eff;
+}
+
+body.dark .greet p:last-child {
+  color: #9aa0a6;
+}
+
+/* Cards */
+body.dark .card {
+  background-color: #1e1f20;
+  color: #c4c7c5;
+}
+
+body.dark .card:hover {
+  background-color: #2a2b2c;
+}
+
+body.dark .card img {
+  filter: invert(1);
+}
+
+/* Search box */
+body.dark .search-box {
+  background-color: #1e1f20;
+  color: #e3e3e3;
+}
+
+body.dark .search-box input {
+  background-color: transparent;
+  color: #e3e3e3;
+}
+
+body.dark .search-box input::placeholder {
+  color: #9aa0a6;
+}
+
+body.dark .search-box img {
+  filter: invert(1);
+}
+
+body.dark .bottom-info {
+  color: #9aa0a6;
+}
+
+/* Result area */
+body.dark .result-title p {
+  color: #e3e3e3;
+}
+
+body.dark .result-data p {
+  color: #c4c7c5;
+}
+
+/* Sidebar icons */
+body.dark .menu,
+body.dark .sidebar img {
+  filter: invert(1);
+}
+
+/* Nav icon stays natural (user photo) */
+body.dark .nav img {
+  filter: none;
+}
