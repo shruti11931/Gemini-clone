@@ -1,4 +1,5 @@
-const OPENROUTER_API_KEY = "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"
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY
+
 
 export const sendPrompt = async (prompt, history = [], image = null) => {
     const messages = []
