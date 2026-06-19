@@ -9,10 +9,22 @@ import Activity from '../Activity/Activity'
 
 const Sidebar = () => {
   const [extended, setExtended] = useState(false)
+
   const [showSettings, setShowSettings] = useState(false)
   const [showHelp, setShowHelp] = useState(false);
+
+  const [renamingId, setRenamingId] = useState(null)
+  const [renameText, setRenameText] = useState("")
+
   const [showActivity, setShowActivity] = useState(false)
-  const { sessions, loadSession, newChat, darkMode, setDarkMode } = useContext(Context)
+  const { sessions, loadSession, newChat, darkMode, setDarkMode, renameSession } = useContext(Context)
+
+  const handleRenameSubmit = (id) => {
+    if (renameText.trim()) {
+      renameSession(id, renameText.trim())
+    }
+    setRenamingId(null)
+  }
 
   return (
     <div className={`sidebar ${!extended ? 'collapsed' : ''}`}>
@@ -30,14 +42,38 @@ const Sidebar = () => {
         {extended && (
           <div className="recent">
             <p className='recent-title'>Recent</p>
-            {sessions.map((session, index) => (
+            {sessions.map((session) => (
               <div
-                key={index}
-                onClick={() => loadSession(session)}
+                key={session.id}
+                onClick={() => renamingId !== session.id && loadSession(session)}
                 className="recent-entry"
               >
                 <img src={assets.message_icon} alt="" />
-                <p>{session.title || session.prompt.slice(0, 20)}...</p>
+                {renamingId === session.id ? (
+                  <input
+                    autoFocus
+                    value={renameText}
+                    onChange={e => setRenameText(e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleRenameSubmit(session.id)
+                      if (e.key === 'Escape') setRenamingId(null)
+                    }}
+                    onBlur={() => handleRenameSubmit(session.id)}
+                    className="rename-input"
+                  />
+                ) : (
+                  <p
+                    onDoubleClick={(e) => {
+                      e.stopPropagation()
+                      setRenamingId(session.id)
+                      setRenameText(session.title || session.prompt)
+                    }}
+                    title="Double-click to rename"
+                  >
+                    {session.title || session.prompt.slice(0, 20)}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -76,7 +112,7 @@ const Sidebar = () => {
       {showHelp && <Help onClose={() => setShowHelp(false)} />}
 
 
-    </div>  // ← closes .sidebar
+    </div>  
   )
 }
 

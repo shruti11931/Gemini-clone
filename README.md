@@ -1,145 +1,111 @@
-# Gemini Clone ✨
+# Gemini Clone
 
-A feature-rich AI chat application built with React, styled as a Gemini clone, powered by OpenRouter's API. Built as a hands-on full-stack learning project.
+A responsive AI chat application inspired by Google Gemini, built with React and Vite. Supports multi-turn conversations, image analysis, voice input, and a full set of UI features modeled after the real Gemini interface.
 
----
-
-## Features
-
-- **Multi-turn conversations** — full chat thread displayed, not just the latest response
-- **Word-by-word streaming** — responses appear token by token for a real Gemini feel
-- **Stop & Regenerate** — cancel mid-generation or regenerate the last response
-- **Session history** — conversations saved to localStorage with auto-generated titles
-- **Dark / Light mode** — persistent theme toggle via Settings
-- **Image upload** — send images along with prompts for vision-based queries
-- **Speech input** — mic support via Web Speech API
-- **Markdown rendering** — bold, italic, headings, bullet lists, and tables rendered properly
-- **Copy & Feedback** — copy response to clipboard, thumbs up/down on answers
-- **Font size control** — small / medium / large text across the app
-- **Help Center** — FAQ, keyboard shortcuts, capability guide, feedback form, and docs
-- **Keyboard shortcuts** — Ctrl+Enter to send, Ctrl+Shift+N for new chat, and more
+🔗 **Live Demo:** _add your Vercel URL here after deployment_
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, Vite |
-| Styling | CSS (custom, no UI library) |
-| AI API | OpenRouter (Gemini models) |
-| Speech | react-speech-recognition |
-| State | React Context API |
-| Storage | localStorage |
+- **Multi-turn conversations** — full chat thread with streaming responses, not just single Q&A
+- **Image upload & analysis** — attach an image and ask questions about it
+- **Voice input** — speech-to-text via the microphone button
+- **Edit & resend** — click any of your own messages to edit and resend
+- **Regenerate response** — re-run the last AI response
+- **Copy & feedback** — copy responses to clipboard, mark them 👍/👎
+- **Dark / Light mode** — toggle with persisted preference
+- **Adjustable font size** — Small / Medium / Large, saved across sessions
+- **Conversation history (Activity)** — grouped by Today / Yesterday / Last 7 Days / Older, with search and delete
+- **Rename conversations** — double-click any sidebar entry to rename it
+- **Clear chat history** — with confirmation before deleting
+- **Simple login** — enter your name once; your initials appear as your avatar throughout the app
+- **Mobile responsive** — sidebar collapses into a bottom navigation bar on small screens
+- **Loading skeleton** — smooth placeholder UI while the app initializes
 
 ---
 
-## Project Structure
+## 🛠️ Tech Stack
+
+- **React** (Vite)
+- **react-speech-recognition** — voice input
+- **OpenRouter API** — AI response generation
+- **localStorage** — persisting chat sessions, theme, font size, and login state (no backend)
+
+---
+
+## 📁 Project Structure
 
 ```
 src/
-├── assets/              # Icons and images
+├── assets/                 # Icons and static assets
 ├── components/
-│   ├── Main/            # Chat UI, streaming, message thread
-│   ├── Sidebar/         # Session list, navigation
-│   ├── Settings/        # Theme, font size, clear history
-│   ├── Help/            # FAQ, shortcuts, docs modal
-│   └── Activity/        # Session activity view
+│   ├── Activity/            # Conversation history modal
+│   ├── Auth/                 # Login screen
+│   ├── Conversation/         # Multi-turn chat thread renderer
+│   ├── Help/                 # Help modal
+│   ├── Main/                  # Main chat panel (input, greeting, cards)
+│   ├── Settings/              # Settings modal (theme, font size, clear history)
+│   ├── Sidebar/                # Left navigation / conversation list
+│   └── Skeleton/                # Loading placeholder
 ├── config/
-│   └── openrouter.js    # API call logic
-└── context/
-    └── Context.jsx      # Global state management
+│   └── openrouter.js          # API call logic
+├── context/
+│   └── Context.jsx              # Global state (sessions, messages, user, theme)
+├── App.jsx
+├── main.jsx
+└── index.css
 ```
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- Node.js 18+
-- An [OpenRouter](https://openrouter.ai) API key
+- Node.js (v16+)
+- An OpenRouter API key
 
 ### Installation
 
 ```bash
-# Clone the repo
-git clone https://github.com/your-username/gemini-clone.git
-cd gemini-clone
-
-# Install dependencies
+git clone https://github.com/<your-username>/<your-repo>.git
+cd <your-repo>
 npm install
-
-# Create environment file
-cp .env.example .env
 ```
 
-Add your API key to `.env`:
+### Environment Variables
 
-```env
+Create a `.env` file in the root directory:
+
+```
 VITE_OPENROUTER_API_KEY=your_api_key_here
 ```
 
+> Update `src/config/openrouter.js` to read from `import.meta.env.VITE_OPENROUTER_API_KEY` if it isn't already.
+
+### Run locally
+
 ```bash
-# Start development server
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Visit `http://localhost:5173`
+
+### Build for production
+
+```bash
+npm run build
+```
 
 ---
 
-## Usage
+## 📌 Notes
 
-- **New chat** — click `+ New Chat` in the sidebar or press `Ctrl+Shift+N`
-- **Send message** — type and press `Enter` or `Ctrl+Enter`
-- **Upload image** — click the gallery icon in the input bar
-- **Voice input** — click the mic icon and speak
-- **Switch theme** — go to Settings → Appearance
-- **Load past chat** — click any session in the sidebar
-- **Stop generation** — click the Stop button that appears while generating
+- All chat history, theme, and login data are stored in the browser's `localStorage` — clearing browser data will reset the app.
+- This is a learning/portfolio project and not affiliated with Google or Gemini.
 
 ---
 
-## Keyboard Shortcuts
+## 📄 License
 
-| Shortcut | Action |
-|---|---|
-| `Ctrl + Enter` | Send message |
-| `Ctrl + Shift + N` | New chat |
-| `Ctrl + /` | Open Help |
-| `Esc` | Close modal |
-
----
-
-
-
----
-
-## Roadmap
-
-- [ ] Code block syntax highlighting
-- [ ] Export chat as PDF
-- [ ] Multiple AI model selector
-- [ ] Mobile responsive layout
-- [ ] Conversation search
-
----
-
-## Contributing
-
-Pull requests are welcome. For major changes, open an issue first to discuss what you'd like to change.
-
----
-
-## License
-
-MIT
-
----
-
-## Acknowledgements
-
-- [OpenRouter](https://openrouter.ai) for unified model API access
-- [Google Gemini](https://gemini.google.com) for design inspiration
-- [react-speech-recognition](https://github.com/JamesBrill/react-speech-recognition) for voice input
+This project is for educational purposes.

@@ -1,20 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
 
-*{
+* {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
   font-family: Outfit;
 }
+
 /* In your App.css or index.css */
-html, body {
+html,
+body {
   height: 100%;
   overflow: hidden;
   margin: 0;
 }
-[data-font="small"]  { font-size: 13px; }
-[data-font="medium"] { font-size: 16px; }
-[data-font="large"]  { font-size: 19px; }
+
+[data-font="small"] {
+  font-size: 13px;
+}
+
+[data-font="medium"] {
+  font-size: 16px;
+}
+
+[data-font="large"] {
+  font-size: 19px;
+}
 
 #root {
   height: 100vh;
@@ -46,29 +57,38 @@ html, body {
     padding: 0;
   }
 
-  .sidebar {
-    width: 100%;
-    min-width: 0;
-    border-right: none;
-    border-bottom: 1px solid #e0e4ea;
-  }
-
-  .sidebar.collapsed {
-    width: 100%;
-    min-width: 0;
-  }
-
   .main {
     height: auto;
-    min-height: calc(100vh - 72px);
+    min-height: calc(100vh - 64px);
     padding-left: 0;
     padding-right: 0;
   }
-
-  .main-container {
-    padding: 24px;
-  }
 }
+
+.sidebar {
+  width: 100%;
+  min-width: 0;
+  border-right: none;
+  border-bottom: 1px solid #e0e4ea;
+}
+
+.sidebar.collapsed {
+  width: 100%;
+  min-width: 0;
+}
+
+.main {
+  height: auto;
+  min-height: calc(100vh - 72px);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.main-container {
+  padding: 24px;
+}
+
+
 /* ===== DARK MODE ===== */
 body.dark {
   background-color: #131314;

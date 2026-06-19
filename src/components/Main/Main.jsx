@@ -2,6 +2,7 @@ import React, { useContext, useRef, useState } from 'react'
 import './Main.css'
 import { assets } from '../../assets/assets'
 import { Context } from '../../context/Context'
+import Conversation from '../Conversation/Conversation'
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
 
 
@@ -35,6 +36,14 @@ const formatHistory = (text) => {
     .replace(/\n/g, '<br/>');
 };
 
+const getInitials = (name) => {
+  if (!name) return "?"
+  const parts = name.trim().split(" ")
+  return parts.length > 1
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : parts[0][0].toUpperCase()
+}
+
 
 const Main = () => {
   const {
@@ -45,7 +54,8 @@ const Main = () => {
     sentImagePreview,
     chatHistory,
     isGenerating, stopGenerating,   // ← ADD
-    regenerateResponse,              // ← ADD
+    regenerateResponse,           
+     user,        // ← ADD
     editAndResend,                   // ← ADD
 
   } = useContext(Context)
@@ -141,7 +151,7 @@ const Main = () => {
     <div className='main'>
       <div className="nav">
         <p>Gemini</p>
-        <img src={assets.user_icon} alt="" />
+        <div className="nav-avatar">{getInitials(user?.name)}</div>
       </div>
 
       <div className={`main-container ${!showResult ? 'home' : ''}`}>
@@ -171,69 +181,9 @@ const Main = () => {
             </div>
           </>
         ) : (
-          <div className="result">
-            {/* Full conversation thread */}
-            {chatHistory.reduce((turns, msg, i, arr) => {
-              const isLastUserMsg = i === arr.length - 2 && (isGenerating || loading);
-              if (msg.role === 'user' && !isLastUserMsg) {
-                const assistantMsg = arr[i + 1];
-                turns.push(
-                  <div key={i} className="conversation-turn">
-                    {/* User message */}
-                    <div className="result-title">
-                      <img src={assets.user_icon} alt="" />
-                      <p>{msg.content}</p>
-                    </div>
-                    {/* Assistant message */}
-                    <div className="result-data">
-                      <img src={assets.gemini_icon} alt="" />
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {assistantMsg ? (
-                          <p dangerouslySetInnerHTML={{ __html: formatHistory(assistantMsg.content) }} />
-                        ) : loading ? (
-                          <div className="loader"><span /><span /><span /></div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              return turns;
-            }, [])}
+       
+            <Conversation />
 
-            {/* Current streaming response (latest turn) */}
-            {(isGenerating || loading) ? (
-              <div className="conversation-turn">
-                <div className="result-title">
-                  <img src={assets.user_icon} alt="" />
-                  <p>{recentPrompt}</p>
-                </div>
-                <div className="result-data">
-                  <img src={assets.gemini_icon} alt="" />
-                  <div>
-                    {loading && !resultData ? (
-                      <div className="loader"><span /><span /><span /></div>
-                    ) : (
-                      <p className="typing-cursor"
-                        dangerouslySetInnerHTML={{ __html: resultData }} />
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {/* Action buttons after last response */}
-            {!loading && !isGenerating && resultData && (
-              <div style={{ display: 'flex', gap: '12px', marginTop: '10px', paddingLeft: '52px' }}>
-                <button onClick={handleCopy} title="Copy" style={iconBtn}>{copied ? '✅' : '📋'}</button>
-                <button onClick={regenerateResponse} title="Regenerate" style={iconBtn}>🔄</button>
-                <button onClick={() => setFeedbackLocal(p => p === 'up' ? null : 'up')}
-                  style={{ ...iconBtn, color: feedback === 'up' ? '#1a73e8' : 'inherit' }}>👍</button>
-                <button onClick={() => setFeedbackLocal(p => p === 'down' ? null : 'down')}
-                  style={{ ...iconBtn, color: feedback === 'down' ? '#e53935' : 'inherit' }}>👎</button>
-              </div>
-            )}
-          </div>
         )}
 
         <div className="main-bottom">

@@ -3,14 +3,50 @@ import { sendPrompt } from "../config/openrouter";
 
 export const Context = createContext();
 
+const generateTitle = (prompt) => {
+  const stopWords = ['a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been',
+    'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'shall', 'can', 'to', 'of', 'in', 'for', 'on',
+    'with', 'at', 'by', 'from', 'this', 'that', 'these', 'those', 'i', 'me',
+    'my', 'we', 'our', 'you', 'your', 'it', 'its'];
+  const words = (prompt || '').split(' ')
+    .filter(w => !stopWords.includes(w.toLowerCase()))
+    .slice(0, 4);
+  return words.join(' ') || (prompt || '').slice(0, 20);
+};
+
 const ContextProvider = ({ children }) => {
+
+  const [messages, setMessages] = useState([]);
+  const currentConversationId = useRef(null);
+
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem("user");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const login = (name) => {
+    const userData = { name: name.trim() };
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+  };
+
+
   const [input, setInput] = useState("");
   const [recentPrompt, setRecentPrompt] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resultData, setResultData] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
-  // Load from localStorage on first render
   const hasLoaded = useRef(false);
 
   const [sessions, setSessions] = useState(() => {
@@ -34,31 +70,24 @@ const ContextProvider = ({ children }) => {
     localStorage.setItem("chatSessions", JSON.stringify(sessions));
   }, [sessions]);
 
-  // In Context.jsx, add this with your other useEffects:
   useEffect(() => {
-    const saved = localStorage.getItem('fontSize') || 'medium'
-    document.documentElement.setAttribute('data-font', saved)
-  }, [])
+    const saved = localStorage.getItem('fontSize') || 'medium';
+    document.documentElement.setAttribute('data-font', saved);
+  }, []);
 
-  // Save to localStorage whenever sessions changes
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [sentImagePreview, setSentImagePreview] = useState(null);
 
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [abortController, setAbortController] = useState(null);
+  const wordTimers = useRef([]);
+  const [feedbacks, setFeedbacks] = useState({});
 
-
-  const [uploadedImage, setUploadedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [sentImagePreview, setSentImagePreview] = useState(null)
-
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [abortController, setAbortController] = useState(null)
-  const wordTimers = useRef([])
-  const [feedbacks, setFeedbacks] = useState({}) // { [sessionIndex]: 'up'|'down' }
-
-  // ✅ Dark mode — reads saved preference on first load
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("theme") === "dark";
   });
 
-  // ✅ Apply/remove dark class on body whenever darkMode changes
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add("dark");
@@ -69,12 +98,7 @@ const ContextProvider = ({ children }) => {
     }
   }, [darkMode]);
 
-  useEffect(() => {
-    localStorage.setItem("chatSessions", JSON.stringify(sessions));
-  }, [sessions]);
-
   const formatResponse = (text) => {
-    // Handle tables first (before any other processing)
     text = text.replace(
       /\|(.+)\|\n\|[-| :\t]+\|\n((?:\|.+\|\n?)+)/g,
       (_, header, body) => {
@@ -90,10 +114,8 @@ const ContextProvider = ({ children }) => {
       }
     );
 
-    // Remove any leftover separator lines (|----|----| lines)
     text = text.replace(/^\|[-| :\t]+\|$/gm, '');
 
-    // Remove leftover bare pipe lines that didn't get converted
     text = text.replace(/^\|(.+)\|$/gm, (_, row) => {
       const cells = row.split('|').map(c => c.trim()).filter(Boolean);
       return cells.join(' &nbsp;·&nbsp; ');
@@ -112,8 +134,6 @@ const ContextProvider = ({ children }) => {
     return formatted;
   };
 
-
-
   const newChat = () => {
     setLoading(false);
     setShowResult(false);
@@ -121,6 +141,8 @@ const ContextProvider = ({ children }) => {
     setRecentPrompt("");
     setChatHistory([]);
     setUploadedImage(null);
+    setMessages([]);
+    currentConversationId.current = null;
     setImagePreview(null);
     setSentImagePreview(null);
   };
@@ -128,16 +150,23 @@ const ContextProvider = ({ children }) => {
   const loadSession = (session) => {
     setRecentPrompt(session.prompt);
     setResultData(session.response);
-    setChatHistory(session.history);
+    setChatHistory(session.history || []);
     setShowResult(true);
+    setMessages(session.messages || []);
+    currentConversationId.current = session.id;
     setLoading(false);
-    setSentImagePreview(session.imagePreview || null);  // ← change imagePreview to sentImagePreview
+    setSentImagePreview(session.imagePreview || null);
     setImagePreview(null);
+  };
+
+  const renameSession = (id, newTitle) => {
+    setSessions(prev => prev.map(s =>
+      s.id === id ? { ...s, title: newTitle } : s
+    ));
   };
 
   const stopGenerating = () => {
     if (abortController) abortController.abort();
-    // Cancel all pending word timers
     wordTimers.current.forEach(clearTimeout);
     wordTimers.current = [];
     setLoading(false);
@@ -145,11 +174,41 @@ const ContextProvider = ({ children }) => {
     setAbortController(null);
   };
 
+  // ── Save/update the sidebar session for the CURRENT conversation ──
+  const saveSession = ({ firstPrompt, formatted, newHistory, allMessages, sentImage }) => {
+    if (!currentConversationId.current) {
+      currentConversationId.current = Date.now();
+    }
+
+    const sessionData = {
+      id: currentConversationId.current,
+      prompt: firstPrompt,
+      title: generateTitle(firstPrompt),
+      response: formatted,
+      history: newHistory,
+      messages: allMessages,
+      imagePreview: sentImage,
+      timestamp: new Date().toISOString()
+    };
+
+    setSessions(prev => {
+      const existingIndex = prev.findIndex(s => s.id === currentConversationId.current);
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = sessionData;
+        return updated;
+      }
+      return [sessionData, ...prev];
+    });
+  };
+
   const regenerateResponse = async () => {
     if (!recentPrompt) return;
-    // Remove last assistant message from history before resending
+
     const trimmedHistory = chatHistory.slice(0, -1);
+    const trimmedMessages = messages.slice(0, -1); // drop last assistant message
     setChatHistory(trimmedHistory);
+    setMessages(trimmedMessages);
     setResultData("");
     setLoading(true);
     setShowResult(true);
@@ -160,34 +219,41 @@ const ContextProvider = ({ children }) => {
 
     try {
       const response = await sendPrompt(recentPrompt, trimmedHistory, null);
-      // REPLACE WITH:
+
       const newHistory = [
-        ...historySnapshot,
-        { role: "user", content: userPrompt },
+        ...trimmedHistory,
+        { role: "user", content: recentPrompt },
         { role: "assistant", content: response },
       ];
       const formatted = formatResponse(response);
-      const title = userPrompt.split(' ').slice(0, 4).join(' ');
 
-      setSessions((prev) => [
-        { prompt: userPrompt || "Image analysis", title, response: formatted, history: newHistory, imagePreview: sentImage, timestamp: new Date().toISOString() },
-        ...prev,
-      ]);
+      const assistantMsg = { id: Date.now(), role: 'assistant', content: formatted };
+      const allMessages = [...trimmedMessages, assistantMsg];
+      setMessages(allMessages);
+
+      const firstPrompt = allMessages.find(m => m.role === 'user')?.content || recentPrompt;
+      saveSession({
+        firstPrompt,
+        formatted,
+        newHistory,
+        allMessages,
+        sentImage: sentImagePreview
+      });
 
       const words = formatted.split(" ");
       words.forEach((word, i) => {
-        setTimeout(() => {
+        const t = setTimeout(() => {
           setResultData((prev) => prev + word + " ");
         }, 75 * i);
+        wordTimers.current.push(t);
       });
 
-      // ✅ Set history AFTER all words are done streaming
       const totalTime = 75 * words.length + 150;
-      setTimeout(() => {
-        setChatHistory(newHistory);   // ← moved here
+      const historyTimer = setTimeout(() => {
+        setChatHistory(newHistory);
       }, totalTime);
+      wordTimers.current.push(historyTimer);
 
-      
       const endTimer = setTimeout(() => {
         setIsGenerating(false);
         setAbortController(null);
@@ -200,18 +266,16 @@ const ContextProvider = ({ children }) => {
       setResultData(`⚠️ Error: ${err.message}`);
       setIsGenerating(false);
       setAbortController(null);
-
-    } finally {
-
     }
   };
 
   const editAndResend = async (newPrompt) => {
     if (!newPrompt.trim()) return;
     setRecentPrompt(newPrompt);
-    // Strip last user+assistant pair and resend
     const trimmedHistory = chatHistory.slice(0, -2);
+    const trimmedMessages = messages.slice(0, -2);
     setChatHistory(trimmedHistory);
+    setMessages(trimmedMessages);
     await onSent(newPrompt);
   };
 
@@ -219,7 +283,6 @@ const ContextProvider = ({ children }) => {
     setFeedbacks(prev => ({ ...prev, [index]: type }));
   };
 
-  // Context.jsx - in onSent function
   const onSent = async (prompt) => {
     const userPrompt = prompt !== undefined ? prompt : input;
     if (!userPrompt.trim()) return;
@@ -234,41 +297,59 @@ const ContextProvider = ({ children }) => {
     setInput("");
 
     const sentImage = imagePreview;
-    const currentImage = uploadedImage;           // ← snapshot before clearing
-    const historySnapshot = [...chatHistory];     // ← snapshot chatHistory NOW
+    const historySnapshot = [...chatHistory];
 
-    setSentImagePreview(imagePreview)
+    setSentImagePreview(imagePreview);
     setImagePreview(null);
     setUploadedImage(null);
+
+    const userMsg = {
+      id: Date.now(),
+      role: 'user',
+      content: userPrompt,
+      imagePreview: sentImage
+    };
+
+    // Snapshot messages BEFORE adding the new one — avoids stale closures
+    const messagesSnapshot = [...messages, userMsg];
+    setMessages(messagesSnapshot);
 
     try {
       const response = await sendPrompt(
         userPrompt || "what is in this image?",
-        historySnapshot,   // ← use snapshot
-        currentImage       // ← use snapshot
+        historySnapshot,
+        uploadedImage
       );
 
       const newHistory = [
-        ...historySnapshot,  // ← use snapshot
+        ...historySnapshot,
         { role: "user", content: userPrompt },
         { role: "assistant", content: response },
       ];
       setChatHistory(newHistory);
       const formatted = formatResponse(response);
 
-      const title = userPrompt.split(' ').slice(0, 4).join(' ');
-      setSessions((prev) => [
-        { prompt: userPrompt || "Image analysis", title, response: formatted, history: newHistory, imagePreview: sentImage, timestamp: new Date().toISOString() },
-        ...prev,
-      ]);
+      const assistantMsg = { id: Date.now() + 1, role: 'assistant', content: formatted };
+      const allMessages = [...messagesSnapshot, assistantMsg];
+      setMessages(allMessages);
 
+      const firstPrompt = allMessages.find(m => m.role === 'user')?.content || userPrompt;
+      saveSession({
+        firstPrompt,
+        formatted,
+        newHistory,
+        allMessages,
+        sentImage: allMessages.find(m => m.role === 'user')?.imagePreview || sentImage
+      });
 
       const words = formatted.split(" ");
       words.forEach((word, i) => {
-        setTimeout(() => {
+        const t = setTimeout(() => {
           setResultData((prev) => prev + word + " ");
         }, 75 * i);
+        wordTimers.current.push(t);
       });
+
     } catch (err) {
       setResultData(`⚠️ Error: ${err.message}`);
     } finally {
@@ -287,20 +368,21 @@ const ContextProvider = ({ children }) => {
         loading,
         resultData,
         sessions,
-
+        setSessions,
+        user, login, logout,
         loadSession,
+        messages, setMessages,
         onSent,
         newChat,
-        darkMode,       // ✅ new
+        darkMode,
         setDarkMode,
-        uploadedImage, setUploadedImage,   // ✅ new
+        uploadedImage, setUploadedImage,
         imagePreview, setImagePreview,
         sentImagePreview,
         isGenerating, stopGenerating,
         regenerateResponse,
+        renameSession,   // ← ADD THIS
         editAndResend,
-        setSessions,
-        // ADD chatHistory to the value object:
         chatHistory,
         feedbacks, setFeedback,
       }}
@@ -311,4 +393,3 @@ const ContextProvider = ({ children }) => {
 };
 
 export default ContextProvider;
-
