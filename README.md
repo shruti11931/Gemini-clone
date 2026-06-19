@@ -68,8 +68,8 @@ src/
 ### Installation
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
+git clone https://github.com/shruti11931/Gemini-clone.git
+cd Gemini-clone
 npm install
 ```
 
