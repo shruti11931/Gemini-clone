@@ -2,8 +2,7 @@
 
 A responsive AI chat application inspired by Google Gemini, built with React and Vite. Supports multi-turn conversations, image analysis, voice input, and a full set of UI features modeled after the real Gemini interface.
 
-🔗 **Live Demo:** _add your Vercel URL here after deployment_
-
+🔗 **Live Demo:** https://gemini-clone-nine-orcin.vercel.app
 ---
 
 ## ✨ Features
