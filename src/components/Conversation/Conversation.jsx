@@ -7,7 +7,7 @@ const Conversation = () => {
     const {
         messages, loading, isGenerating,
         regenerateResponse, editAndResend,
-        user,   
+        user,
     } = useContext(Context)
 
     const getInitials = (name) => {
@@ -49,6 +49,12 @@ const Conversation = () => {
                                 <div className="user-bubble">
                                     {msg.imagePreview && (
                                         <img src={msg.imagePreview} alt="uploaded" className="msg-image" />
+                                    )}
+                                    {msg.pdfFileName && (
+                                        <div className="msg-pdf-chip">
+                                            <span className="pdf-icon">📄</span>
+                                            <span className="pdf-name">{msg.pdfFileName}</span>
+                                        </div>
                                     )}
                                     {editingId === msg.id ? (
                                         <div className="edit-inline">

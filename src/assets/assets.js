@@ -15,6 +15,7 @@ import send_icon from './send_icon.png'
 import gemini_icon from './gemini_icon.png'
 import image from './image.png'
 import gallery from './gallery.png'
+import doc from './doc.png'
 import img from './image_ic.png'
 
 export const assets = {
@@ -29,6 +30,7 @@ export const assets = {
     gallery_icon,
     mic_icon,
     user_icon,
+    doc,
     youtube_icon,
     message_icon,
     code_icon,

@@ -140,3 +140,28 @@ body.dark .msg-actions button:hover {
 body.dark .nav-avatar {
   background: linear-gradient(135deg, #4a6fa5, #a85d5d);
 }
+.msg-pdf-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    max-width: 220px;
+}
+
+.msg-pdf-chip .pdf-icon {
+    font-size: 16px;
+}
+
+.msg-pdf-chip .pdf-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.dark .msg-pdf-chip {
+    background: rgba(255, 255, 255, 0.1);
+}

@@ -79,6 +79,9 @@ const ContextProvider = ({ children }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [sentImagePreview, setSentImagePreview] = useState(null);
 
+  const [uploadedPdfText, setUploadedPdfText] = useState(null);
+  const [pdfFileName, setPdfFileName] = useState(null);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [abortController, setAbortController] = useState(null);
   const wordTimers = useRef([]);
@@ -141,6 +144,8 @@ const ContextProvider = ({ children }) => {
     setRecentPrompt("");
     setChatHistory([]);
     setUploadedImage(null);
+    setUploadedPdfText(null);   // ← ADD
+    setPdfFileName(null);
     setMessages([]);
     currentConversationId.current = null;
     setImagePreview(null);
@@ -297,17 +302,20 @@ const ContextProvider = ({ children }) => {
     setInput("");
 
     const sentImage = imagePreview;
+    const sentPdfName = pdfFileName;          // ← ADD
     const historySnapshot = [...chatHistory];
 
     setSentImagePreview(imagePreview);
     setImagePreview(null);
     setUploadedImage(null);
+    setPdfFileName(null);                     // ← ADD
 
     const userMsg = {
       id: Date.now(),
       role: 'user',
       content: userPrompt,
-      imagePreview: sentImage
+      imagePreview: sentImage,
+      pdfFileName: sentPdfName          // ← ADD
     };
 
     // Snapshot messages BEFORE adding the new one — avoids stale closures
@@ -316,9 +324,10 @@ const ContextProvider = ({ children }) => {
 
     try {
       const response = await sendPrompt(
-        userPrompt || "what is in this image?",
+        userPrompt || (uploadedPdfText ? "Summarize this document." : "what is in this image?"),
         historySnapshot,
-        uploadedImage
+        uploadedImage,
+        uploadedPdfText          // ← ADD
       );
 
       const newHistory = [
@@ -356,6 +365,7 @@ const ContextProvider = ({ children }) => {
       setIsGenerating(false);
       setLoading(false);
       setAbortController(null);
+      setUploadedPdfText(null);
     }
   };
 
@@ -383,6 +393,8 @@ const ContextProvider = ({ children }) => {
         regenerateResponse,
         renameSession,   // ← ADD THIS
         editAndResend,
+        uploadedPdfText, setUploadedPdfText,   // ← ADD
+        pdfFileName, setPdfFileName,
         chatHistory,
         feedbacks, setFeedback,
       }}

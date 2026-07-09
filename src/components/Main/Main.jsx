@@ -3,6 +3,8 @@ import './Main.css'
 import { assets } from '../../assets/assets'
 import { Context } from '../../context/Context'
 import Conversation from '../Conversation/Conversation'
+import PdfPreview from '../PdfPreview/PdfPreview'
+import { extractTextFromPdf } from '../../utils/pdfReader'
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
 
 
@@ -52,10 +54,12 @@ const Main = () => {
     uploadedImage, setUploadedImage,
     imagePreview, setImagePreview,
     sentImagePreview,
+    uploadedPdfText, setUploadedPdfText,   // ← ADD
+    pdfFileName, setPdfFileName,
     chatHistory,
     isGenerating, stopGenerating,   // ← ADD
-    regenerateResponse,           
-     user,        // ← ADD
+    regenerateResponse,
+    user, logout,   // ← ADD
     editAndResend,                   // ← ADD
 
   } = useContext(Context)
@@ -71,6 +75,7 @@ const Main = () => {
   // ✅ Hidden file input ref
   const fileInputRef = useRef(null)
   const sentImageRef = useRef(null)
+  const pdfInputRef = useRef(null)
 
   const [feedback, setFeedbackLocal] = useState(null)
   const [copied, setCopied] = useState(false)
@@ -107,6 +112,32 @@ const Main = () => {
 
     // Reset file input so same file can be re-selected
     e.target.value = ''
+  }
+
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (file.type !== 'application/pdf') {
+      alert('Please select a PDF file.')
+      return
+    }
+
+    try {
+      const text = await extractTextFromPdf(file)
+      setUploadedPdfText(text)
+      setPdfFileName(file.name)
+    } catch (err) {
+      console.error('PDF extraction failed:', err)
+      alert('Could not read this PDF. It may be scanned/image-based rather than text-based.')
+    }
+
+    e.target.value = ''
+  }
+
+  const removePdf = () => {         // ← ADD
+    setUploadedPdfText(null)
+    setPdfFileName(null)
   }
 
   React.useEffect(() => {
@@ -147,18 +178,25 @@ const Main = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleLogout = () => {
+    logout()
+  }
+
   return (
     <div className='main'>
       <div className="nav">
         <p>Gemini</p>
-        <div className="nav-avatar">{getInitials(user?.name)}</div>
+        <div className="nav-right">
+          <div className="nav-avatar">{getInitials(user?.name)}</div>
+          <button onClick={handleLogout} className="logout-btn">Logout</button>
+        </div>
       </div>
 
       <div className={`main-container ${!showResult ? 'home' : ''}`}>
         {!showResult ? (
           <>
             <div className="greet">
-              <p><span>Hello, Dev.</span></p>
+              <p><span>Hello, {user?.name || "there"}.</span></p>
               <p>How can I help you today?</p>
             </div>
             <div className="cards">
@@ -181,8 +219,8 @@ const Main = () => {
             </div>
           </>
         ) : (
-       
-            <Conversation />
+
+          <Conversation />
 
         )}
 
@@ -198,11 +236,13 @@ const Main = () => {
               <p className="image-preview-label">Image ready to send</p>
             </div>
           )}
+
+          <PdfPreview fileName={pdfFileName} onRemove={removePdf} />
+
           {isGenerating && (
             <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-              <button onClick={stopGenerating} style={{
+              <button onClick={stopGenerating} className="stop-btn" style={{
                 padding: '6px 16px', borderRadius: '20px',
-                border: '1px solid #aaa', background: 'none',
                 cursor: 'pointer', fontSize: '13px'
               }}>
                 ⏹ Stop generating
@@ -231,6 +271,23 @@ const Main = () => {
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}
               />
+              <input
+                type="file"
+                accept="application/pdf"
+                ref={pdfInputRef}
+                onChange={handlePdfUpload}
+                style={{ display: 'none' }}
+              />
+              <span
+                onClick={() => pdfInputRef.current.click()}
+                style={{
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  opacity: pdfFileName ? 1 : 0.5,
+                  padding: '0 4px'
+                }}
+                title="Upload a PDF"
+              >🗂️</span>
               {/* ✅ Gallery icon triggers file input */}
 
               <img

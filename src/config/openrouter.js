@@ -1,7 +1,8 @@
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY
+console.log("KEY LOADED:", OPENROUTER_API_KEY ? "yes, length " + OPENROUTER_API_KEY.length : "❌ undefined")
 
 
-export const sendPrompt = async (prompt, history = [], image = null) => {
+export const sendPrompt = async (prompt, history = [], image = null, pdfText = null) => {
     const messages = []
 
     for (const item of history) {
@@ -16,6 +17,9 @@ export const sendPrompt = async (prompt, history = [], image = null) => {
                 { type: "text", text: prompt || "What is in this image?" }
             ]
         })
+    } else if (pdfText) {
+        const combinedPrompt = `The user has uploaded a PDF document. Use its content below to answer their question.\n\n--- PDF CONTENT START ---\n${pdfText}\n--- PDF CONTENT END ---\n\nUser's question: ${prompt || "Summarize this document."}`
+        messages.push({ role: "user", content: combinedPrompt })
     } else {
         messages.push({ role: "user", content: prompt })
     }

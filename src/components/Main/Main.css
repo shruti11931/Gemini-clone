@@ -260,6 +260,7 @@ body.dark .main-bottom {
   transition: border 0.2s, box-shadow 0.2s;
 }
 
+
 .search-box:focus-within {
   border-color: #c8cdd4;
   box-shadow: 0 1px 6px rgba(0,0,0,0.08);
@@ -533,6 +534,33 @@ body.dark .edit-actions button.primary {
   padding-bottom: 20px;
   overflow-y: auto;
 }
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid #aaa;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+  color: #444;  
+}
+body.dark .logout-btn {
+  color: #e3e3e3;
+  border-color: #666;
+}
+
+.logout-btn:hover {
+  opacity: 1;
+}
+
 /* Send button appear animation */
 @keyframes sendPop {
   0%   { opacity: 0; transform: scale(0.5); }
