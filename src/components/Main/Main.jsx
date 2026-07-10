@@ -278,16 +278,19 @@ const Main = () => {
                 onChange={handlePdfUpload}
                 style={{ display: 'none' }}
               />
-              <span
+              <img
+                src={assets.doc}
+                alt="upload pdf"
                 onClick={() => pdfInputRef.current.click()}
                 style={{
                   cursor: 'pointer',
-                  fontSize: '18px',
                   opacity: pdfFileName ? 1 : 0.5,
-                  padding: '0 4px'
+                  width: '20px',
+                  height: '20px',
+                  marginRight: '4px'
                 }}
                 title="Upload a PDF"
-              >🗂️</span>
+              />
               {/* ✅ Gallery icon triggers file input */}
 
               <img
