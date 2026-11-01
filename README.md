@@ -108,3 +108,15 @@ npm run build
 ## 📄 License
 
 This project is for educational purposes.
+
+---
+
+## 🚀 Run locally
+
+```bash
+npm install
+cp .env.example .env     # then put your OpenRouter key in .env
+npm run dev
+```
+
+Open http://localhost:5173. Get a free key at https://openrouter.ai/keys. Restart `npm run dev` after editing `.env`.

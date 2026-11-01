@@ -137,7 +137,15 @@ const ContextProvider = ({ children }) => {
     return formatted;
   };
 
+  const clearTimers = () => {
+    wordTimers.current.forEach(clearTimeout);
+    wordTimers.current = [];
+  };
+
   const newChat = () => {
+    clearTimers();
+    if (abortController) abortController.abort();
+    setIsGenerating(false);
     setLoading(false);
     setShowResult(false);
     setResultData("");
@@ -153,6 +161,9 @@ const ContextProvider = ({ children }) => {
   };
 
   const loadSession = (session) => {
+    clearTimers();
+    if (abortController) abortController.abort();
+    setIsGenerating(false);
     setRecentPrompt(session.prompt);
     setResultData(session.response);
     setChatHistory(session.history || []);
@@ -223,7 +234,7 @@ const ContextProvider = ({ children }) => {
     setIsGenerating(true);
 
     try {
-      const response = await sendPrompt(recentPrompt, trimmedHistory, null);
+      const response = await sendPrompt(recentPrompt, trimmedHistory, null, null, controller.signal);
 
       const newHistory = [
         ...trimmedHistory,
@@ -268,6 +279,7 @@ const ContextProvider = ({ children }) => {
 
     } catch (err) {
       setLoading(false);
+      if (err.name === "AbortError") return;
       setResultData(`⚠️ Error: ${err.message}`);
       setIsGenerating(false);
       setAbortController(null);
@@ -281,14 +293,14 @@ const ContextProvider = ({ children }) => {
     const trimmedMessages = messages.slice(0, -2);
     setChatHistory(trimmedHistory);
     setMessages(trimmedMessages);
-    await onSent(newPrompt);
+    await onSent(newPrompt, { history: trimmedHistory, msgs: trimmedMessages });
   };
 
   const setFeedback = (index, type) => {
     setFeedbacks(prev => ({ ...prev, [index]: type }));
   };
 
-  const onSent = async (prompt) => {
+  const onSent = async (prompt, override) => {
     const userPrompt = prompt !== undefined ? prompt : input;
     if (!userPrompt.trim()) return;
 
@@ -303,7 +315,7 @@ const ContextProvider = ({ children }) => {
 
     const sentImage = imagePreview;
     const sentPdfName = pdfFileName;          // ← ADD
-    const historySnapshot = [...chatHistory];
+    const historySnapshot = [...(override?.history ?? chatHistory)];
 
     setSentImagePreview(imagePreview);
     setImagePreview(null);
@@ -319,7 +331,7 @@ const ContextProvider = ({ children }) => {
     };
 
     // Snapshot messages BEFORE adding the new one — avoids stale closures
-    const messagesSnapshot = [...messages, userMsg];
+    const messagesSnapshot = [...(override?.msgs ?? messages), userMsg];
     setMessages(messagesSnapshot);
 
     try {
@@ -327,7 +339,8 @@ const ContextProvider = ({ children }) => {
         userPrompt || (uploadedPdfText ? "Summarize this document." : "what is in this image?"),
         historySnapshot,
         uploadedImage,
-        uploadedPdfText          // ← ADD
+        uploadedPdfText,
+        controller.signal
       );
 
       const newHistory = [
@@ -360,7 +373,7 @@ const ContextProvider = ({ children }) => {
       });
 
     } catch (err) {
-      setResultData(`⚠️ Error: ${err.message}`);
+      if (err.name !== "AbortError") setResultData(`⚠️ Error: ${err.message}`);
     } finally {
       setIsGenerating(false);
       setLoading(false);

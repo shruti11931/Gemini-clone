@@ -1,13 +1,28 @@
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY
-console.log("KEY LOADED:", OPENROUTER_API_KEY ? "yes, length " + OPENROUTER_API_KEY.length : "❌ undefined")
 
+// Free models change often on OpenRouter. "openrouter/free" auto-picks a working free model.
+// Override with VITE_TEXT_MODELS / VITE_VISION_MODELS (comma-separated) in .env if needed.
+const parseList = (v, fallback) =>
+    v ? v.split(',').map(s => s.trim()).filter(Boolean) : fallback
 
-export const sendPrompt = async (prompt, history = [], image = null, pdfText = null) => {
-    const messages = []
+const TEXT_MODELS = parseList(import.meta.env.VITE_TEXT_MODELS, [
+    "openrouter/free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "openai/gpt-oss-120b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+])
+const VISION_MODELS = parseList(import.meta.env.VITE_VISION_MODELS, [
+    "openrouter/free",
+    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free",
+])
 
-    for (const item of history) {
-        messages.push({ role: item.role, content: item.content })
+export const sendPrompt = async (prompt, history = [], image = null, pdfText = null, signal = undefined) => {
+    if (!OPENROUTER_API_KEY) {
+        throw new Error("Missing API key. Create a .env file with VITE_OPENROUTER_API_KEY=your_key, then restart `npm run dev`.")
     }
+
+    const messages = history.map(({ role, content }) => ({ role, content }))
 
     if (image) {
         messages.push({
@@ -18,53 +33,52 @@ export const sendPrompt = async (prompt, history = [], image = null, pdfText = n
             ]
         })
     } else if (pdfText) {
-        const combinedPrompt = `The user has uploaded a PDF document. Use its content below to answer their question.\n\n--- PDF CONTENT START ---\n${pdfText}\n--- PDF CONTENT END ---\n\nUser's question: ${prompt || "Summarize this document."}`
-        messages.push({ role: "user", content: combinedPrompt })
+        messages.push({
+            role: "user",
+            content: `The user has uploaded a PDF document. Use its content below to answer their question.\n\n--- PDF CONTENT START ---\n${pdfText}\n--- PDF CONTENT END ---\n\nUser's question: ${prompt || "Summarize this document."}`
+        })
     } else {
         messages.push({ role: "user", content: prompt })
     }
 
-    const visionModels = [
-        "google/gemma-4-31b-it:free",
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-        "nvidia/nemotron-nano-12b-v2-vl:free",
-    ]
-    const textModels = [
-        "meta-llama/llama-3.3-70b-instruct:free",
-        "nvidia/nemotron-3-super-120b-a12b:free",
-        "openai/gpt-oss-120b:free",
-        "nousresearch/hermes-3-llama-3.1-405b:free",
-    ]
-
-    const modelsToTry = image ? visionModels : textModels
+    const modelsToTry = image ? VISION_MODELS : TEXT_MODELS
+    let lastError = "unknown error"
 
     for (const model of modelsToTry) {
         try {
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
+                signal,
                 headers: {
                     "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost:5173",
+                    "HTTP-Referer": window.location.origin,
+                    "X-Title": "Gemini Clone",
                 },
                 body: JSON.stringify({ model, messages })
             })
 
-            const data = await response.json()
-            console.log(`✅ [${model}]:`, data)
+            const data = await response.json().catch(() => ({}))
 
-            if (data.error) {
-                console.warn(`⚠️ ${model} failed:`, JSON.stringify(data.error))  // full error object
+            if (response.status === 401) {
+                throw new Error("Invalid or missing OpenRouter API key (401). Check your .env file.")
+            }
+
+            const content = data?.choices?.[0]?.message?.content
+            if (data.error || !response.ok || !content) {
+                lastError = data?.error?.message || `HTTP ${response.status}`
+                console.warn(`${model} failed:`, lastError)
                 continue
             }
 
-            return data.choices[0].message.content
-
+            return content
         } catch (err) {
-            console.warn(`⚠️ ${model} threw: ${err.message}`)
-            continue
+            if (err.name === "AbortError") throw err
+            if (err.message.includes("API key")) throw err
+            lastError = err.message
+            console.warn(`${model} threw:`, err.message)
         }
     }
 
-    throw new Error("All models failed. Check console for details.")
+    throw new Error(`All models failed. Last error: ${lastError}`)
 }
